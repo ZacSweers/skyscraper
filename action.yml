@@ -107,24 +107,31 @@ runs:
         cp "$TEMP_DIR/extracted/skyscraper" "$HOME/.skyscraper/bin/"
         echo "$HOME/.skyscraper/bin" >> "$GITHUB_PATH"
 
-    - name: Write do-not-delete file
+    - name: Prepare do-not-delete file
+      id: do-not-delete
       shell: bash
       run: |
         DO_NOT_DELETE_CONTENT='${{ inputs.do-not-delete }}'
         DO_NOT_DELETE_PATH='${{ inputs.do-not-delete-path }}'
+        FINAL_PATH=""
 
+        # If inline content provided, write it to a temp file
         if [ -n "$DO_NOT_DELETE_CONTENT" ]; then
-          printf '%s\n' "$DO_NOT_DELETE_CONTENT" > do-not-delete.txt
+          TEMP_FILE=$(mktemp)
+          printf '%s\n' "$DO_NOT_DELETE_CONTENT" > "$TEMP_FILE"
+
+          # Append from path if also provided
+          if [ -n "$DO_NOT_DELETE_PATH" ] && [ -f "$DO_NOT_DELETE_PATH" ]; then
+            echo "" >> "$TEMP_FILE"
+            cat "$DO_NOT_DELETE_PATH" >> "$TEMP_FILE"
+          fi
+
+          FINAL_PATH="$TEMP_FILE"
+        elif [ -n "$DO_NOT_DELETE_PATH" ]; then
+          FINAL_PATH="$DO_NOT_DELETE_PATH"
         fi
 
-        if [ -n "$DO_NOT_DELETE_PATH" ] && [ -f "$DO_NOT_DELETE_PATH" ]; then
-          if [ -f do-not-delete.txt ]; then
-            echo "" >> do-not-delete.txt
-            cat "$DO_NOT_DELETE_PATH" >> do-not-delete.txt
-          else
-            cp "$DO_NOT_DELETE_PATH" do-not-delete.txt
-          fi
-        fi
+        echo "path=$FINAL_PATH" >> "$GITHUB_OUTPUT"
 
     - name: Run skyscraper
       shell: bash
@@ -133,6 +140,7 @@ runs:
         RUST_LOG: info
         RETENTION_DAYS: ${{ inputs.retention-days }}
         DRY_RUN: ${{ inputs.dry-run }}
+        DO_NOT_DELETE_FILE: ${{ steps.do-not-delete.outputs.path }}
         BLUESKY_IDENTIFIER: ${{ inputs.bluesky-identifier }}
         BLUESKY_APP_PASSWORD: ${{ inputs.bluesky-app-password }}
         BLUESKY_PDS_HOST: ${{ inputs.bluesky-pds-host }}

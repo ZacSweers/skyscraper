@@ -26,12 +26,14 @@ pub fn is_protected(do_not_delete: &HashSet<String>, platform: &str, id: &str) -
     do_not_delete.contains(&format!("{platform}:{id}")) || do_not_delete.contains(id)
 }
 
-fn load_do_not_delete(path: &str) -> HashSet<String> {
-    let path = Path::new(path);
+fn load_do_not_delete(path: &Path) -> HashSet<String> {
     if !path.exists() {
+        info!("No do-not-delete file at {}, skipping", path.display());
         return HashSet::new();
     }
+    info!("Loading do-not-delete list from {}", path.display());
     let Ok(contents) = fs::read_to_string(path) else {
+        warn!("Failed to read {}", path.display());
         return HashSet::new();
     };
     contents
@@ -56,7 +58,9 @@ async fn main() -> Result<()> {
         .unwrap_or(false);
 
     let cutoff = Utc::now() - TimeDelta::days(retention_days);
-    let do_not_delete = load_do_not_delete("do-not-delete.txt");
+    let do_not_delete_path =
+        env::var("DO_NOT_DELETE_FILE").unwrap_or_else(|_| "do-not-delete.txt".into());
+    let do_not_delete = load_do_not_delete(Path::new(&do_not_delete_path));
 
     info!("Skyscraper - Social Media Post Cleanup");
     info!("Cutoff date: {cutoff}");
