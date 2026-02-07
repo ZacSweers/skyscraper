@@ -4,11 +4,15 @@
 
 ## [1.1.0]
 
+_2026-02-07_
+
 ### Removed
 
 - Threads support. The Threads API just throws 500 errors and doesn't appear to be a serious product.
 
 ## [1.0.0]
+
+_2026-02-07_
 
 Initial release.
 
