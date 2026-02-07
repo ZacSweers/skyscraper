@@ -8,6 +8,3 @@
 #
 # Mastodon - use the status ID:
 #   mastodon:111234567890123456
-#
-# Threads - use the media ID:
-#   threads:1234567890

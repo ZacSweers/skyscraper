@@ -1,5 +1,5 @@
 name: 'Skyscraper'
-description: 'Delete old posts from Bluesky, Mastodon, and Threads'
+description: 'Delete old posts from Bluesky and Mastodon'
 branding:
   icon: 'trash-2'
   color: 'blue'
@@ -32,9 +32,6 @@ inputs:
     required: false
   mastodon-access-token:
     description: 'Mastodon access token'
-    required: false
-  threads-access-token:
-    description: 'Threads long-lived access token'
     required: false
   do-not-delete:
     description: |
@@ -141,4 +138,3 @@ runs:
         BLUESKY_PDS_HOST: ${{ inputs.bluesky-pds-host }}
         MASTODON_INSTANCE_URL: ${{ inputs.mastodon-instance-url }}
         MASTODON_ACCESS_TOKEN: ${{ inputs.mastodon-access-token }}
-        THREADS_ACCESS_TOKEN: ${{ inputs.threads-access-token }}

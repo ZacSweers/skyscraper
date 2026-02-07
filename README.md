@@ -1,6 +1,6 @@
 # Skyscraper
 
-A tool for deleting old posts from Bluesky, Mastodon, and Threads.
+A tool for deleting old posts from Bluesky and Mastodon.
 
 Posts older than a configurable retention period (default: 180 days) are deleted automatically. A do-not-delete list lets you exempt specific posts.
 
@@ -56,7 +56,6 @@ jobs:
           bluesky-app-password: ${{ secrets.BLUESKY_APP_PASSWORD }}
           mastodon-instance-url: ${{ secrets.MASTODON_INSTANCE_URL }}
           mastodon-access-token: ${{ secrets.MASTODON_ACCESS_TOKEN }}
-          threads-access-token: ${{ secrets.THREADS_ACCESS_TOKEN }}
           do-not-delete: |
             bluesky:3k2la5diqyc2x
             mastodon:111234567890123456
@@ -89,8 +88,6 @@ bluesky:at://did:plc:xyz/app.bsky.feed.post/3k2la5diqyc2x
 # Mastodon — use the status ID
 mastodon:111234567890123456
 
-# Threads — use the media ID
-threads:1234567890
 ```
 
 Lines starting with `#` and blank lines are ignored.
@@ -107,7 +104,6 @@ Any platform whose variables are missing is silently skipped.
 | `BLUESKY_APP_PASSWORD`  | App password — generate one at [bsky.app](https://bsky.app) → Settings → App Passwords |
 | `MASTODON_INSTANCE_URL` | Instance base URL, e.g. `https://mastodon.social`                                      |
 | `MASTODON_ACCESS_TOKEN` | OAuth access token from your instance's developer settings                             |
-| `THREADS_ACCESS_TOKEN`  | Long-lived token from the [Meta developer portal](https://developers.facebook.com/)    |
 
 ### Optional
 
@@ -133,17 +129,6 @@ Any platform whose variables are missing is silently skipped.
 4. Required scopes: `read:accounts`, `read:statuses`, `write:statuses`.
 5. Save, then copy the access token.
 6. Set `MASTODON_INSTANCE_URL` to your instance URL and `MASTODON_ACCESS_TOKEN` to the token.
-
-### Threads
-
-1. Go to the [Meta Developer Portal](https://developers.facebook.com/) and create an app with Threads API access.
-2. Add the `threads_basic`, `threads_content_publish`, and `threads_manage_posts` permissions.
-3. Generate a short-lived token, then exchange it for a long-lived token (valid 60 days).
-4. Set `THREADS_ACCESS_TOKEN` to the long-lived token.
-
-> **Note:** Threads long-lived tokens expire after 60 days. You will need to
-> re-run `./setup-tokens.sh` (or refresh the token manually) before it expires.
-> See [Meta's documentation on long-lived tokens](https://developers.facebook.com/docs/threads/get-started/long-lived-tokens).
 
 ## Running locally
 
