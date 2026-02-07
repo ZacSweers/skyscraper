@@ -1,6 +1,5 @@
 mod bluesky;
 mod mastodon;
-mod threads;
 
 use anyhow::{Context, Result};
 use chrono::{DateTime, FixedOffset, TimeDelta, Utc};
@@ -101,17 +100,6 @@ async fn main() -> Result<()> {
             }
         }
         _ => warn!("Mastodon credentials not set, skipping"),
-    }
-
-    // --- Threads ---
-    if let Ok(token) = env::var("THREADS_ACCESS_TOKEN") {
-        info!("Processing Threads account");
-        if let Err(e) = threads::delete_old_posts(&token, &config, &do_not_delete).await {
-            error!("Threads error: {e:#}");
-            had_errors = true;
-        }
-    } else {
-        warn!("Threads credentials not set, skipping");
     }
 
     if had_errors {

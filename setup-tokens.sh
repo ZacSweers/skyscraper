@@ -134,47 +134,6 @@ else
 fi
 
 # --------------------------------------------------------------------------- #
-# Threads
-# --------------------------------------------------------------------------- #
-separator
-echo "▸ Threads"
-echo
-echo "You need a long-lived access token from the Meta developer portal."
-echo "  1. Go to https://developers.facebook.com/ and create/select your app."
-echo "  2. Add the Threads API product."
-echo "  3. Required permissions: threads_basic, threads_content_publish,"
-echo "     threads_manage_posts."
-echo "  4. Generate a short-lived token in the API Explorer."
-echo "  5. Exchange it for a long-lived token (valid 60 days):"
-echo
-echo "     curl -s \"https://graph.threads.net/access_token\\"
-echo "       ?grant_type=th_exchange_token\\"
-echo "       &client_secret=<APP_SECRET>\\"
-echo "       &access_token=<SHORT_LIVED_TOKEN>\""
-echo
-echo "  The response JSON contains your long-lived token."
-echo
-
-THREADS_ACCESS_TOKEN=""
-
-if prompt_secret_hidden THREADS_ACCESS_TOKEN "Long-lived access token (blank to skip)"; then
-  echo "Validating Threads credentials..."
-  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-    "https://graph.threads.net/v1.0/me?access_token=${THREADS_ACCESS_TOKEN}")
-
-  if [[ "$HTTP_CODE" == "200" ]]; then
-    echo "✓ Threads credentials are valid."
-  else
-    echo "✗ Authentication failed (HTTP $HTTP_CODE). Check your token."
-    if ! confirm "Keep this value anyway?"; then
-      unset 'SECRETS[-1]'
-    fi
-  fi
-else
-  echo "Skipping Threads."
-fi
-
-# --------------------------------------------------------------------------- #
 # Summary and GitHub secrets
 # --------------------------------------------------------------------------- #
 separator

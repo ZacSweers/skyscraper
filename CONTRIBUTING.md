@@ -41,7 +41,6 @@ src/
   main.rs       — entry point, config loading, platform orchestration
   bluesky.rs    — Bluesky/AT Protocol integration
   mastodon.rs   — Mastodon API integration
-  threads.rs    — Threads/Meta API integration
 ```
 
 ## Adding a new platform

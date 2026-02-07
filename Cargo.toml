@@ -3,11 +3,11 @@ name = "skyscraper-cli"
 version = "1.0.0"
 edition = "2021"
 license = "Apache-2.0"
-description = "A CLI tool that deletes old posts from Bluesky, Mastodon, and Threads"
+description = "A CLI tool that deletes old posts from Bluesky and Mastodon"
 repository = "https://github.com/ZacSweers/skyscraper"
 homepage = "https://github.com/ZacSweers/skyscraper"
 readme = "README.md"
-keywords = ["bluesky", "mastodon", "threads", "social-media", "cleanup"]
+keywords = ["bluesky", "mastodon", "social-media", "cleanup"]
 categories = ["command-line-utilities"]
 
 [[bin]]
