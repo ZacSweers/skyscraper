@@ -73,8 +73,7 @@ async fn main() -> Result<()> {
         env::var("BLUESKY_APP_PASSWORD"),
     ) {
         (Ok(identifier), Ok(password)) => {
-            let pds = env::var("BLUESKY_PDS_HOST")
-                .unwrap_or_else(|_| "https://bsky.social".into());
+            let pds = env::var("BLUESKY_PDS_HOST").unwrap_or_else(|_| "https://bsky.social".into());
             info!("Processing Bluesky account: {identifier}");
             if let Err(e) =
                 bluesky::delete_old_posts(&pds, &identifier, &password, &config, &do_not_delete)

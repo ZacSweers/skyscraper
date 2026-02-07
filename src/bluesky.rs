@@ -102,11 +102,7 @@ pub async fn delete_old_posts(
             }
 
             // rkey is the last segment of the AT URI
-            let rkey = record
-                .uri
-                .rsplit('/')
-                .next()
-                .context("Invalid AT URI")?;
+            let rkey = record.uri.rsplit('/').next().context("Invalid AT URI")?;
 
             if is_protected(do_not_delete, "bluesky", rkey)
                 || is_protected(do_not_delete, "bluesky", &record.uri)
@@ -137,11 +133,7 @@ pub async fn delete_old_posts(
                 deleted += 1;
                 info!("Deleted: {} ({created_at})", record.uri);
             } else {
-                warn!(
-                    "Failed to delete {}: {}",
-                    record.uri,
-                    del_resp.status()
-                );
+                warn!("Failed to delete {}: {}", record.uri, del_resp.status());
             }
 
             tokio::time::sleep(std::time::Duration::from_millis(100)).await;
