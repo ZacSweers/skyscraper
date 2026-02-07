@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [1.2.0]
+
+_2026-02-07_
+
 ### Changed
 
 - Renamed "do-not-delete" to "keep" everywhere: file is now `keep.txt`, env var is `KEEP_FILE`, action inputs are `keep` and `keep-path`.
