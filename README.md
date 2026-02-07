@@ -2,7 +2,7 @@
 
 A tool for deleting old posts from Bluesky and Mastodon.
 
-Posts older than a configurable retention period (default: 180 days) are deleted automatically. A do-not-delete list lets you exempt specific posts.
+Posts older than a configurable retention period (default: 180 days) are deleted automatically. A keep list lets you exempt specific posts.
 
 ## Installation
 
@@ -56,10 +56,10 @@ jobs:
           bluesky-app-password: ${{ secrets.BLUESKY_APP_PASSWORD }}
           mastodon-instance-url: ${{ secrets.MASTODON_INSTANCE_URL }}
           mastodon-access-token: ${{ secrets.MASTODON_ACCESS_TOKEN }}
-          do-not-delete: |
+          keep: |
             bluesky:3k2la5diqyc2x
             mastodon:111234567890123456
-          do-not-delete-path: path/to/do-not-delete.txt
+          keep-path: path/to/keep.txt
 ```
 
 ## Setup
@@ -76,9 +76,9 @@ The script walks you through each platform, validates credentials, and optionall
 
 If you prefer to do it manually, see [Manual token setup](#manual-token-setup) below.
 
-### 2. Configure the do-not-delete list
+### 2. Configure the keep list
 
-Edit `do-not-delete.txt` to protect posts from deletion. One entry per line:
+Edit `keep.txt` to protect posts from deletion. One entry per line:
 
 ```
 # Bluesky — use the rkey (last segment of the AT URI) or the full URI
@@ -112,6 +112,7 @@ Any platform whose variables are missing is silently skipped.
 | `RETENTION_DAYS`   | `180`                 | Posts older than this many days are deleted                          |
 | `DRY_RUN`          | `false`               | Set to `true` to log what would be deleted without actually deleting |
 | `BLUESKY_PDS_HOST` | `https://bsky.social` | Override if your account is on a different PDS                       |
+| `KEEP_FILE`        | `keep.txt`            | Path to the keep list file                                           |
 
 ## Manual token setup
 

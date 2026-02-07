@@ -17,6 +17,10 @@ inputs:
     description: 'Set to "true" to preview deletions without actually deleting'
     required: false
     default: 'false'
+  delete-pinned:
+    description: 'Set to "true" to also delete pinned posts (default: skip them)'
+    required: false
+    default: 'false'
   bluesky-identifier:
     description: 'Bluesky handle or DID'
     required: false
@@ -33,13 +37,13 @@ inputs:
   mastodon-access-token:
     description: 'Mastodon access token'
     required: false
-  do-not-delete:
+  keep:
     description: |
       Multiline list of posts to protect from deletion.
       One entry per line, e.g. "bluesky:abc123". Lines starting with # are ignored.
     required: false
-  do-not-delete-path:
-    description: 'Path to a do-not-delete file. Merged with do-not-delete input if both set.'
+  keep-path:
+    description: 'Path to a keep file. Merged with keep input if both set.'
     required: false
 
 runs:
@@ -107,28 +111,28 @@ runs:
         cp "$TEMP_DIR/extracted/skyscraper" "$HOME/.skyscraper/bin/"
         echo "$HOME/.skyscraper/bin" >> "$GITHUB_PATH"
 
-    - name: Prepare do-not-delete file
-      id: do-not-delete
+    - name: Prepare keep file
+      id: keep
       shell: bash
       run: |
-        DO_NOT_DELETE_CONTENT='${{ inputs.do-not-delete }}'
-        DO_NOT_DELETE_PATH='${{ inputs.do-not-delete-path }}'
+        KEEP_CONTENT='${{ inputs.keep }}'
+        KEEP_PATH='${{ inputs.keep-path }}'
         FINAL_PATH=""
 
         # If inline content provided, write it to a temp file
-        if [ -n "$DO_NOT_DELETE_CONTENT" ]; then
+        if [ -n "$KEEP_CONTENT" ]; then
           TEMP_FILE=$(mktemp)
-          printf '%s\n' "$DO_NOT_DELETE_CONTENT" > "$TEMP_FILE"
+          printf '%s\n' "$KEEP_CONTENT" > "$TEMP_FILE"
 
           # Append from path if also provided
-          if [ -n "$DO_NOT_DELETE_PATH" ] && [ -f "$DO_NOT_DELETE_PATH" ]; then
+          if [ -n "$KEEP_PATH" ] && [ -f "$KEEP_PATH" ]; then
             echo "" >> "$TEMP_FILE"
-            cat "$DO_NOT_DELETE_PATH" >> "$TEMP_FILE"
+            cat "$KEEP_PATH" >> "$TEMP_FILE"
           fi
 
           FINAL_PATH="$TEMP_FILE"
-        elif [ -n "$DO_NOT_DELETE_PATH" ]; then
-          FINAL_PATH="$DO_NOT_DELETE_PATH"
+        elif [ -n "$KEEP_PATH" ]; then
+          FINAL_PATH="$KEEP_PATH"
         fi
 
         echo "path=$FINAL_PATH" >> "$GITHUB_OUTPUT"
@@ -140,7 +144,8 @@ runs:
         RUST_LOG: info
         RETENTION_DAYS: ${{ inputs.retention-days }}
         DRY_RUN: ${{ inputs.dry-run }}
-        DO_NOT_DELETE_FILE: ${{ steps.do-not-delete.outputs.path }}
+        DELETE_PINNED: ${{ inputs.delete-pinned }}
+        KEEP_FILE: ${{ steps.keep.outputs.path }}
         BLUESKY_IDENTIFIER: ${{ inputs.bluesky-identifier }}
         BLUESKY_APP_PASSWORD: ${{ inputs.bluesky-app-password }}
         BLUESKY_PDS_HOST: ${{ inputs.bluesky-pds-host }}

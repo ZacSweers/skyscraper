@@ -12,6 +12,7 @@ use std::path::Path;
 pub struct Config {
     pub cutoff: DateTime<Utc>,
     pub dry_run: bool,
+    pub delete_pinned: bool,
 }
 
 /// Parse an ISO 8601 / RFC 3339 timestamp, tolerating the `+0000` offset
@@ -22,16 +23,16 @@ pub fn parse_timestamp(s: &str) -> Result<DateTime<FixedOffset>> {
         .with_context(|| format!("Failed to parse timestamp: {s}"))
 }
 
-pub fn is_protected(do_not_delete: &HashSet<String>, platform: &str, id: &str) -> bool {
-    do_not_delete.contains(&format!("{platform}:{id}")) || do_not_delete.contains(id)
+pub fn is_protected(keep_list: &HashSet<String>, platform: &str, id: &str) -> bool {
+    keep_list.contains(&format!("{platform}:{id}")) || keep_list.contains(id)
 }
 
-fn load_do_not_delete(path: &Path) -> HashSet<String> {
+fn load_keep_list(path: &Path) -> HashSet<String> {
     if !path.exists() {
-        info!("No do-not-delete file at {}, skipping", path.display());
+        info!("No keep file at {}, skipping", path.display());
         return HashSet::new();
     }
-    info!("Loading do-not-delete list from {}", path.display());
+    info!("Loading keep list from {}", path.display());
     let Ok(contents) = fs::read_to_string(path) else {
         warn!("Failed to read {}", path.display());
         return HashSet::new();
@@ -57,17 +58,24 @@ async fn main() -> Result<()> {
         .map(|v| v == "true" || v == "1")
         .unwrap_or(false);
 
+    let delete_pinned = env::var("DELETE_PINNED")
+        .map(|v| v == "true" || v == "1")
+        .unwrap_or(false);
+
     let cutoff = Utc::now() - TimeDelta::days(retention_days);
-    let do_not_delete_path =
-        env::var("DO_NOT_DELETE_FILE").unwrap_or_else(|_| "do-not-delete.txt".into());
-    let do_not_delete = load_do_not_delete(Path::new(&do_not_delete_path));
+    let keep_file = env::var("KEEP_FILE").unwrap_or_else(|_| "keep.txt".into());
+    let keep_list = load_keep_list(Path::new(&keep_file));
 
     info!("Skyscraper - Social Media Post Cleanup");
     info!("Cutoff date: {cutoff}");
     info!("Dry run: {dry_run}");
-    info!("Protected posts: {}", do_not_delete.len());
+    info!("Protected posts: {}", keep_list.len());
 
-    let config = Config { cutoff, dry_run };
+    let config = Config {
+        cutoff,
+        dry_run,
+        delete_pinned,
+    };
     let mut had_errors = false;
 
     // --- Bluesky ---
@@ -79,8 +87,7 @@ async fn main() -> Result<()> {
             let pds = env::var("BLUESKY_PDS_HOST").unwrap_or_else(|_| "https://bsky.social".into());
             info!("Processing Bluesky account: {identifier}");
             if let Err(e) =
-                bluesky::delete_old_posts(&pds, &identifier, &password, &config, &do_not_delete)
-                    .await
+                bluesky::delete_old_posts(&pds, &identifier, &password, &config, &keep_list).await
             {
                 error!("Bluesky error: {e:#}");
                 had_errors = true;
@@ -96,8 +103,7 @@ async fn main() -> Result<()> {
     ) {
         (Ok(instance), Ok(token)) => {
             info!("Processing Mastodon instance: {instance}");
-            if let Err(e) =
-                mastodon::delete_old_posts(&instance, &token, &config, &do_not_delete).await
+            if let Err(e) = mastodon::delete_old_posts(&instance, &token, &config, &keep_list).await
             {
                 error!("Mastodon error: {e:#}");
                 had_errors = true;

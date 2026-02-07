@@ -13,13 +13,15 @@ struct Account {
 struct Status {
     id: String,
     created_at: String,
+    #[serde(default)]
+    pinned: bool,
 }
 
 pub async fn delete_old_posts(
     instance: &str,
     token: &str,
     config: &Config,
-    do_not_delete: &HashSet<String>,
+    keep_list: &HashSet<String>,
 ) -> Result<()> {
     let client = reqwest::Client::builder()
         .user_agent("skyscraper/0.1.0")
@@ -81,7 +83,16 @@ pub async fn delete_old_posts(
                 continue;
             }
 
-            if is_protected(do_not_delete, "mastodon", &status.id) {
+            if status.pinned && !config.delete_pinned {
+                skipped += 1;
+                warn!(
+                    "Skipping pinned post: {}. To keep it permanently, add to your keep file: mastodon:{}",
+                    status.id, status.id
+                );
+                continue;
+            }
+
+            if is_protected(keep_list, "mastodon", &status.id) {
                 skipped += 1;
                 info!("Protected, skipping: {}", status.id);
                 continue;
