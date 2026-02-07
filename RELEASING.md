@@ -2,44 +2,25 @@
 
 ## Regular release
 
-1. **Bump the version** in `Cargo.toml`:
-   ```toml
-   version = "1.1.0"
-   ```
+```sh
+./release.sh 1.2.0
+```
 
-2. **Commit the version bump**:
-   ```sh
-   git add Cargo.toml Cargo.lock
-   git commit -m "Prepare release 1.1.0"
-   git push origin main
-   ```
+The script handles the full process:
 
-3. **Tag and push** to trigger the release workflow:
-   ```sh
-   git tag v1.1.0
-   git push origin v1.1.0
-   ```
+1. Bumps the version in `Cargo.toml`
+2. Builds and regenerates `Cargo.lock`
+3. Commits and pushes to main
+4. Tags and pushes to trigger the release workflow
+5. Waits for the release workflow to complete
+6. Prompts to publish to crates.io
+7. Updates the major version action tag (e.g. `v1`)
 
-   This triggers `.github/workflows/release.yml`, which:
-   - Cross-compiles binaries for all platforms (Linux, macOS, Windows)
-   - Generates shell and PowerShell installer scripts
-   - Creates a GitHub Release with all artifacts
-   - Pushes the updated Homebrew formula to `ZacSweers/homebrew-tap`
+### Prerequisites
 
-4. **Wait for the release workflow to complete** — check the Actions tab.
-
-5. **Publish to crates.io** (manual, after verifying the GitHub Release looks good):
-   ```sh
-   cargo publish
-   ```
-   This is intentionally manual. Crate publishes are permanent (you can yank but not delete).
-
-6. **Update the `v1` action tag** so GitHub Action consumers on `@v1` get the new version:
-   ```sh
-   git tag -f v1 v1.1.0
-   git push -f origin v1
-   ```
-   Only bump to `v2` if you make breaking changes to `action.yml` inputs.
+- Clean working tree (no uncommitted changes)
+- `gh` CLI installed and authenticated
+- `cargo login` already run (for crates.io publishing)
 
 ## Upgrading cargo-dist
 
@@ -66,16 +47,3 @@ These GitHub Actions secrets must be configured on `ZacSweers/skyscraper`:
 | Secret                  | Purpose                                                  | Rotation                                          |
 |-------------------------|----------------------------------------------------------|---------------------------------------------------|
 | `HOMEBREW_TAP_TOKEN`    | PAT with Contents read/write on `ZacSweers/homebrew-tap` | Check expiry, rotate before it lapses             |
-
-## Checklist
-
-```
-- [ ] Version bumped in Cargo.toml
-- [ ] Committed and pushed to main
-- [ ] Tag pushed (vX.Y.Z)
-- [ ] Release workflow completed successfully
-- [ ] GitHub Release looks correct
-- [ ] Published to crates.io (`cargo publish`)
-- [ ] Updated v1 action tag
-- [ ] Verified `brew install ZacSweers/tap/skyscraper` works
-```

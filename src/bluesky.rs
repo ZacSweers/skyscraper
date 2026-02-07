@@ -12,6 +12,17 @@ struct Session {
 }
 
 #[derive(Deserialize)]
+struct ProfileRecord {
+    value: ProfileValue,
+}
+
+#[derive(Deserialize)]
+struct ProfileValue {
+    #[serde(rename = "pinnedPost")]
+    pinned_post: Option<String>,
+}
+
+#[derive(Deserialize)]
 struct ListRecordsResponse {
     records: Vec<Record>,
     cursor: Option<String>,
@@ -34,7 +45,7 @@ pub async fn delete_old_posts(
     identifier: &str,
     password: &str,
     config: &Config,
-    do_not_delete: &HashSet<String>,
+    keep_list: &HashSet<String>,
 ) -> Result<()> {
     let client = reqwest::Client::builder()
         .user_agent("skyscraper/0.1.0")
@@ -55,6 +66,29 @@ pub async fn delete_old_posts(
         .await?;
 
     info!("Authenticated as {}", session.did);
+
+    // Fetch pinned post URI from profile
+    let pinned_uri: Option<String> = if !config.delete_pinned {
+        let profile_url = format!(
+            "{pds}/xrpc/com.atproto.repo.getRecord?repo={}&collection=app.bsky.actor.profile&rkey=self",
+            session.did
+        );
+        match client
+            .get(&profile_url)
+            .header("Authorization", format!("Bearer {}", session.access_jwt))
+            .send()
+            .await
+        {
+            Ok(resp) => resp
+                .json::<ProfileRecord>()
+                .await
+                .ok()
+                .and_then(|p| p.value.pinned_post),
+            Err(_) => None,
+        }
+    } else {
+        None
+    };
 
     let mut cursor: Option<String> = None;
     let mut deleted = 0u64;
@@ -104,8 +138,17 @@ pub async fn delete_old_posts(
             // rkey is the last segment of the AT URI
             let rkey = record.uri.rsplit('/').next().context("Invalid AT URI")?;
 
-            if is_protected(do_not_delete, "bluesky", rkey)
-                || is_protected(do_not_delete, "bluesky", &record.uri)
+            if pinned_uri.as_deref() == Some(record.uri.as_str()) {
+                skipped += 1;
+                warn!(
+                    "Skipping pinned post: {}. To keep it permanently, add to your keep file: bluesky:{}",
+                    record.uri, rkey
+                );
+                continue;
+            }
+
+            if is_protected(keep_list, "bluesky", rkey)
+                || is_protected(keep_list, "bluesky", &record.uri)
             {
                 skipped += 1;
                 info!("Protected, skipping: {}", record.uri);
