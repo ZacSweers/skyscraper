@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Summary logging now shows separate pinned and kept skip counters instead of a single "protected" count.
+
 ## [1.2.0]
 
 _2026-02-07_

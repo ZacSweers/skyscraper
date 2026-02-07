@@ -50,6 +50,7 @@ jobs:
   cleanup:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v6 # Only if you need keep-path
       - uses: ZacSweers/skyscraper@v1
         with:
           bluesky-identifier: ${{ secrets.BLUESKY_IDENTIFIER }}
