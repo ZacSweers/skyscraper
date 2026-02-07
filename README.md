@@ -1,14 +1,73 @@
 # Skyscraper
 
-A nightly job that deletes old posts from Bluesky, Mastodon, and Threads.
+A tool for deleting old posts from Bluesky, Mastodon, and Threads.
 
 Posts older than a configurable retention period (default: 180 days) are deleted automatically. A do-not-delete list lets you exempt specific posts.
+
+## Installation
+
+### Homebrew (macOS and Linux)
+
+```sh
+brew install ZacSweers/tap/skyscraper
+```
+
+### Shell installer (macOS and Linux)
+
+```sh
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/ZacSweers/skyscraper/releases/latest/download/skyscraper-cli-installer.sh | sh
+```
+
+### PowerShell installer (Windows)
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://github.com/ZacSweers/skyscraper/releases/latest/download/skyscraper-cli-installer.ps1 | iex"
+```
+
+### Cargo
+
+```sh
+cargo install skyscraper-cli
+```
+
+### GitHub Releases
+
+Download prebuilt binaries from the [latest release](https://github.com/ZacSweers/skyscraper/releases/latest).
+
+### GitHub Action
+
+Use skyscraper in your own GitHub Actions workflow without installing anything:
+
+```yaml
+name: Nightly Cleanup
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ZacSweers/skyscraper@v1
+        with:
+          bluesky-identifier: ${{ secrets.BLUESKY_IDENTIFIER }}
+          bluesky-app-password: ${{ secrets.BLUESKY_APP_PASSWORD }}
+          mastodon-instance-url: ${{ secrets.MASTODON_INSTANCE_URL }}
+          mastodon-access-token: ${{ secrets.MASTODON_ACCESS_TOKEN }}
+          threads-access-token: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          do-not-delete: |
+            bluesky:3k2la5diqyc2x
+            mastodon:111234567890123456
+          do-not-delete-path: path/to/do-not-delete.txt
+```
 
 ## Setup
 
 ### 1. Generate tokens
 
-Run the setup script to generate and configure all tokens interactively:
+You can run the `setup-tokens.sh` script in this repo to generate and configure all tokens interactively:
 
 ```sh
 ./setup-tokens.sh
@@ -35,10 +94,6 @@ threads:1234567890
 ```
 
 Lines starting with `#` and blank lines are ignored.
-
-### 3. Deploy
-
-Push the repo to GitHub. The workflow at `.github/workflows/nightly.yml` runs at 6 AM UTC daily. You can also trigger it manually from the Actions tab.
 
 ## Environment variables
 
