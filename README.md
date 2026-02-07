@@ -39,7 +39,7 @@ Download prebuilt binaries from the [latest release](https://github.com/ZacSweer
 Use skyscraper in your own GitHub Actions workflow without installing anything:
 
 ```yaml
-name: Nightly Cleanup
+name: Skyscraper
 
 on:
   schedule:
