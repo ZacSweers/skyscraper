@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.1.0]
+
 ### Removed
 
 - Threads support. The Threads API just throws 500 errors and doesn't appear to be a serious product.
