@@ -1,0 +1,30 @@
+[package]
+name = "skyscraper-cli"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "A CLI tool that deletes old posts from Bluesky, Mastodon, and Threads"
+repository = "https://github.com/ZacSweers/skyscraper"
+homepage = "https://github.com/ZacSweers/skyscraper"
+readme = "README.md"
+keywords = ["bluesky", "mastodon", "threads", "social-media", "cleanup"]
+categories = ["command-line-utilities"]
+
+[[bin]]
+name = "skyscraper"
+path = "src/main.rs"
+
+# The profile that 'cargo dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
+
+[dependencies]
+anyhow = "1"
+chrono = { version = "0.4", features = ["serde"] }
+env_logger = "0.11"
+log = "0.4"
+reqwest = { version = "0.13.2", features = ["json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }

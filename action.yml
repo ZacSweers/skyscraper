@@ -1,0 +1,144 @@
+name: 'Skyscraper'
+description: 'Delete old posts from Bluesky, Mastodon, and Threads'
+branding:
+  icon: 'trash-2'
+  color: 'blue'
+
+inputs:
+  version:
+    description: 'Skyscraper version to use (e.g. "v0.1.0"). Defaults to latest.'
+    required: false
+    default: 'latest'
+  retention-days:
+    description: 'Delete posts older than this many days (default: 180)'
+    required: false
+    default: '180'
+  dry-run:
+    description: 'Set to "true" to preview deletions without actually deleting'
+    required: false
+    default: 'false'
+  bluesky-identifier:
+    description: 'Bluesky handle or DID'
+    required: false
+  bluesky-app-password:
+    description: 'Bluesky app password'
+    required: false
+  bluesky-pds-host:
+    description: 'Bluesky PDS host URL'
+    required: false
+    default: 'https://bsky.social'
+  mastodon-instance-url:
+    description: 'Mastodon instance URL (e.g. https://mastodon.social)'
+    required: false
+  mastodon-access-token:
+    description: 'Mastodon access token'
+    required: false
+  threads-access-token:
+    description: 'Threads long-lived access token'
+    required: false
+  do-not-delete:
+    description: |
+      Multiline list of posts to protect from deletion.
+      One entry per line, e.g. "bluesky:abc123". Lines starting with # are ignored.
+    required: false
+  do-not-delete-path:
+    description: 'Path to a do-not-delete file. Merged with do-not-delete input if both set.'
+    required: false
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Detect platform
+      id: detect
+      shell: bash
+      run: |
+        OS=$(uname -s)
+        ARCH=$(uname -m)
+
+        case "$OS" in
+          Linux)
+            case "$ARCH" in
+              x86_64)  TARGET="x86_64-unknown-linux-gnu" ;;
+              aarch64) TARGET="aarch64-unknown-linux-gnu" ;;
+              *)       echo "::error::Unsupported architecture: $ARCH"; exit 1 ;;
+            esac
+            EXT="tar.xz"
+            ;;
+          Darwin)
+            case "$ARCH" in
+              x86_64)  TARGET="x86_64-apple-darwin" ;;
+              arm64)   TARGET="aarch64-apple-darwin" ;;
+              *)       echo "::error::Unsupported architecture: $ARCH"; exit 1 ;;
+            esac
+            EXT="tar.xz"
+            ;;
+          *)
+            echo "::error::Unsupported OS: $OS"
+            exit 1
+            ;;
+        esac
+
+        echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+        echo "ext=$EXT" >> "$GITHUB_OUTPUT"
+
+    - name: Download skyscraper
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        TARGET="${{ steps.detect.outputs.target }}"
+        EXT="${{ steps.detect.outputs.ext }}"
+        VERSION="${{ inputs.version }}"
+        REPO="ZacSweers/skyscraper"
+
+        if [ "$VERSION" = "latest" ]; then
+          TAG=$(gh release view --repo "$REPO" --json tagName -q .tagName)
+        else
+          TAG="$VERSION"
+        fi
+
+        ASSET="skyscraper-cli-${TARGET}.${EXT}"
+        TEMP_DIR=$(mktemp -d)
+
+        gh release download "$TAG" --repo "$REPO" --pattern "$ASSET" --dir "$TEMP_DIR"
+
+        mkdir -p "$TEMP_DIR/extracted"
+        tar -xf "$TEMP_DIR/$ASSET" -C "$TEMP_DIR/extracted" --strip-components=1
+        chmod +x "$TEMP_DIR/extracted/skyscraper"
+
+        mkdir -p "$HOME/.skyscraper/bin"
+        cp "$TEMP_DIR/extracted/skyscraper" "$HOME/.skyscraper/bin/"
+        echo "$HOME/.skyscraper/bin" >> "$GITHUB_PATH"
+
+    - name: Write do-not-delete file
+      shell: bash
+      run: |
+        DO_NOT_DELETE_CONTENT='${{ inputs.do-not-delete }}'
+        DO_NOT_DELETE_PATH='${{ inputs.do-not-delete-path }}'
+
+        if [ -n "$DO_NOT_DELETE_CONTENT" ]; then
+          printf '%s\n' "$DO_NOT_DELETE_CONTENT" > do-not-delete.txt
+        fi
+
+        if [ -n "$DO_NOT_DELETE_PATH" ] && [ -f "$DO_NOT_DELETE_PATH" ]; then
+          if [ -f do-not-delete.txt ]; then
+            echo "" >> do-not-delete.txt
+            cat "$DO_NOT_DELETE_PATH" >> do-not-delete.txt
+          else
+            cp "$DO_NOT_DELETE_PATH" do-not-delete.txt
+          fi
+        fi
+
+    - name: Run skyscraper
+      shell: bash
+      run: skyscraper
+      env:
+        RUST_LOG: info
+        RETENTION_DAYS: ${{ inputs.retention-days }}
+        DRY_RUN: ${{ inputs.dry-run }}
+        BLUESKY_IDENTIFIER: ${{ inputs.bluesky-identifier }}
+        BLUESKY_APP_PASSWORD: ${{ inputs.bluesky-app-password }}
+        BLUESKY_PDS_HOST: ${{ inputs.bluesky-pds-host }}
+        MASTODON_INSTANCE_URL: ${{ inputs.mastodon-instance-url }}
+        MASTODON_ACCESS_TOKEN: ${{ inputs.mastodon-access-token }}
+        THREADS_ACCESS_TOKEN: ${{ inputs.threads-access-token }}
