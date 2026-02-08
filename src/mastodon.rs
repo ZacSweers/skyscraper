@@ -21,9 +21,9 @@ pub(crate) struct Status {
 pub(crate) trait MastodonClient {
     async fn verify_credentials(&self) -> Result<Account>;
     async fn list_statuses(&self, account_id: &str, max_id: Option<&str>) -> Result<Vec<Status>>;
-    async fn delete_status(&self, id: &str) -> bool;
+    async fn delete_status(&self, id: &str) -> Result<()>;
     async fn list_favourites(&self, max_id: Option<&str>) -> Result<(Vec<Status>, Option<String>)>;
-    async fn unfavourite(&self, id: &str) -> bool;
+    async fn unfavourite(&self, id: &str) -> Result<()>;
 }
 
 pub(crate) struct HttpMastodonClient {
@@ -83,18 +83,15 @@ impl MastodonClient for HttpMastodonClient {
             .context("Failed to parse Mastodon statuses response")
     }
 
-    async fn delete_status(&self, id: &str) -> bool {
-        let resp = self
-            .client
+    async fn delete_status(&self, id: &str) -> Result<()> {
+        self.client
             .delete(format!("{}/api/v1/statuses/{}", self.instance, id))
             .header("Authorization", &self.auth)
             .send()
-            .await;
-
-        match resp {
-            Ok(r) => r.status().is_success(),
-            Err(_) => false,
-        }
+            .await?
+            .error_for_status()
+            .with_context(|| format!("Failed to delete status {id}"))?;
+        Ok(())
     }
 
     async fn list_favourites(&self, max_id: Option<&str>) -> Result<(Vec<Status>, Option<String>)> {
@@ -124,21 +121,18 @@ impl MastodonClient for HttpMastodonClient {
         Ok((favourites, next_max_id))
     }
 
-    async fn unfavourite(&self, id: &str) -> bool {
-        let resp = self
-            .client
+    async fn unfavourite(&self, id: &str) -> Result<()> {
+        self.client
             .post(format!(
                 "{}/api/v1/statuses/{}/unfavourite",
                 self.instance, id
             ))
             .header("Authorization", &self.auth)
             .send()
-            .await;
-
-        match resp {
-            Ok(r) => r.status().is_success(),
-            Err(_) => false,
-        }
+            .await?
+            .error_for_status()
+            .with_context(|| format!("Failed to unfavourite status {id}"))?;
+        Ok(())
     }
 }
 
@@ -215,11 +209,14 @@ pub async fn delete_old_posts(
                 continue;
             }
 
-            if client.delete_status(&status.id).await {
-                deleted += 1;
-                info!("Deleted {label}: {} ({})", status.id, status.created_at);
-            } else {
-                warn!("Failed to delete {}", status.id);
+            match client.delete_status(&status.id).await {
+                Ok(()) => {
+                    deleted += 1;
+                    info!("Deleted {label}: {} ({})", status.id, status.created_at);
+                }
+                Err(e) => {
+                    warn!("Failed to delete {}: {e}", status.id);
+                }
             }
 
             // Mastodon rate-limits deletions; be conservative
@@ -281,11 +278,14 @@ pub async fn delete_old_posts(
                     continue;
                 }
 
-                if client.unfavourite(&status.id).await {
-                    fav_deleted += 1;
-                    info!("Unfavourited: {} ({})", status.id, status.created_at);
-                } else {
-                    warn!("Failed to unfavourite {}", status.id);
+                match client.unfavourite(&status.id).await {
+                    Ok(()) => {
+                        fav_deleted += 1;
+                        info!("Unfavourited: {} ({})", status.id, status.created_at);
+                    }
+                    Err(e) => {
+                        warn!("Failed to unfavourite {}: {e}", status.id);
+                    }
                 }
 
                 tokio::time::sleep(std::time::Duration::from_millis(300)).await;
@@ -432,10 +432,10 @@ mod tests {
             Ok(page)
         }
 
-        async fn delete_status(&self, id: &str) -> bool {
+        async fn delete_status(&self, id: &str) -> Result<()> {
             self.statuses.lock().unwrap().retain(|s| s.id != id);
             self.deleted_statuses.lock().unwrap().push(id.to_string());
-            true
+            Ok(())
         }
 
         async fn list_favourites(
@@ -460,10 +460,10 @@ mod tests {
             Ok((page, next_max_id))
         }
 
-        async fn unfavourite(&self, id: &str) -> bool {
+        async fn unfavourite(&self, id: &str) -> Result<()> {
             self.favourites.lock().unwrap().retain(|s| s.id != id);
             self.unfavourited.lock().unwrap().push(id.to_string());
-            true
+            Ok(())
         }
     }
 

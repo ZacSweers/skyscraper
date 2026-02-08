@@ -55,7 +55,7 @@ pub(crate) trait BlueskyClient {
         collection: &str,
         cursor: Option<&str>,
     ) -> Result<ListRecordsResponse>;
-    async fn delete_record(&self, did: &str, collection: &str, rkey: &str) -> bool;
+    async fn delete_record(&self, did: &str, collection: &str, rkey: &str) -> Result<()>;
 }
 
 pub(crate) struct HttpBlueskyClient {
@@ -157,10 +157,9 @@ impl BlueskyClient for HttpBlueskyClient {
         Ok(resp)
     }
 
-    async fn delete_record(&self, did: &str, collection: &str, rkey: &str) -> bool {
+    async fn delete_record(&self, did: &str, collection: &str, rkey: &str) -> Result<()> {
         let session = self.session();
-        let resp = self
-            .client
+        self.client
             .post(format!("{}/xrpc/com.atproto.repo.deleteRecord", self.pds))
             .header("Authorization", format!("Bearer {}", session.access_jwt))
             .json(&serde_json::json!({
@@ -169,12 +168,10 @@ impl BlueskyClient for HttpBlueskyClient {
                 "rkey": rkey,
             }))
             .send()
-            .await;
-
-        match resp {
-            Ok(r) => r.status().is_success(),
-            Err(_) => false,
-        }
+            .await?
+            .error_for_status()
+            .with_context(|| format!("Failed to delete {collection}/{rkey}"))?;
+        Ok(())
     }
 }
 
@@ -248,11 +245,14 @@ async fn delete_old_records(
                 continue;
             }
 
-            if client.delete_record(did, collection, rkey).await {
-                deleted += 1;
-                info!("Deleted {label}: {} ({created_at})", record.uri);
-            } else {
-                warn!("Failed to delete {}", record.uri);
+            match client.delete_record(did, collection, rkey).await {
+                Ok(()) => {
+                    deleted += 1;
+                    info!("Deleted {label}: {} ({created_at})", record.uri);
+                }
+                Err(e) => {
+                    warn!("Failed to delete {}: {e}", record.uri);
+                }
             }
 
             tokio::time::sleep(std::time::Duration::from_millis(100)).await;
@@ -442,12 +442,12 @@ mod tests {
             })
         }
 
-        async fn delete_record(&self, _did: &str, collection: &str, rkey: &str) -> bool {
+        async fn delete_record(&self, _did: &str, collection: &str, rkey: &str) -> Result<()> {
             self.deleted
                 .lock()
                 .unwrap()
                 .push((collection.to_string(), rkey.to_string()));
-            true
+            Ok(())
         }
     }
 
