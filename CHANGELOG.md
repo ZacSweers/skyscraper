@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [1.3.1]
+
+_2026-02-07_
+
 ### Fixed
 
 - Fix rate limiting + improve debug logs.
