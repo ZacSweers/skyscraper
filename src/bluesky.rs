@@ -169,8 +169,7 @@ impl BlueskyClient for HttpBlueskyClient {
             }))
             .send()
             .await?
-            .error_for_status()
-            .with_context(|| format!("Failed to delete {collection}/{rkey}"))?;
+            .error_for_status()?;
         Ok(())
     }
 }

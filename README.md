@@ -114,6 +114,13 @@ Any platform whose variables are missing is silently skipped.
 | `DRY_RUN`          | `false`               | Set to `true` to log what would be deleted without actually deleting |
 | `BLUESKY_PDS_HOST` | `https://bsky.social` | Override if your account is on a different PDS                       |
 | `KEEP_FILE`        | `keep.txt`            | Path to the keep list file                                           |
+| `DELETE_REPOSTS`   | `true`                | Set to `false` to skip deleting reposts/reblogs                      |
+| `DELETE_LIKES`     | `true`                | Set to `false` to skip deleting likes/favourites                     |
+| `DELETE_PINNED`    | `false`               | Set to `true` to delete pinned posts instead of skipping them        |
+
+## Rate limits
+
+Mastodon enforces a rate limit of **30 status deletions per 30 minutes** (this includes unfavourites and unreblogs). If you have many old posts, the first run may hit 429 (Too Many Requests) errors after the first 30 deletions. Failed deletions are logged as warnings and skipped — subsequent runs will pick up where the previous run left off. Running on a daily cron schedule (as shown in the GitHub Action example) will steadily clear the backlog.
 
 ## Manual token setup
 

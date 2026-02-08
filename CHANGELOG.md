@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Improve rate limiting logs.
+
 ## [1.3.1]
 
 _2026-02-07_
