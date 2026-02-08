@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Support for deleting old reposts/reblogs and likes/favourites on both Bluesky and Mastodon. Controlled via `DELETE_REPOSTS` (default: `true`) and `DELETE_LIKES` (default: `true`) env vars.
+
 ## [1.2.1]
 
 _2026-02-07_
