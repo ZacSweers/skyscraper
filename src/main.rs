@@ -79,6 +79,9 @@ async fn main() -> Result<()> {
     info!("Skyscraper - Social Media Post Cleanup");
     info!("Cutoff date: {cutoff}");
     info!("Dry run: {dry_run}");
+    info!("Delete reposts: {delete_reposts}");
+    info!("Delete likes: {delete_likes}");
+    info!("Delete pinned: {delete_pinned}");
     info!("Protected posts: {}", keep_list.len());
 
     let config = Config {

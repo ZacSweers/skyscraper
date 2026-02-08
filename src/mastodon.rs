@@ -237,8 +237,17 @@ pub async fn delete_old_posts(
         let mut fav_deleted = 0u64;
         let mut fav_skipped_kept = 0u64;
 
-        loop {
-            let (favourites, next_max_id) = client.list_favourites(fav_max_id.as_deref()).await?;
+        'favourites: loop {
+            let (favourites, next_max_id) = match client
+                .list_favourites(fav_max_id.as_deref())
+                .await
+            {
+                Ok(result) => result,
+                Err(e) => {
+                    warn!("Could not fetch favourites (token may lack read:favourites scope): {e}");
+                    break;
+                }
+            };
 
             if favourites.is_empty() {
                 break;
@@ -284,7 +293,7 @@ pub async fn delete_old_posts(
 
             fav_max_id = next_max_id;
             if fav_max_id.is_none() {
-                break;
+                break 'favourites;
             }
         }
 

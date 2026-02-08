@@ -1,4 +1,4 @@
-name: 'Skyscraper'
+name: 'Skyscraper - Social Media Cleanup'
 description: 'Delete old posts from Bluesky and Mastodon'
 branding:
   icon: 'trash-2'
