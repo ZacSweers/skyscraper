@@ -89,8 +89,7 @@ impl MastodonClient for HttpMastodonClient {
             .header("Authorization", &self.auth)
             .send()
             .await?
-            .error_for_status()
-            .with_context(|| format!("Failed to delete status {id}"))?;
+            .error_for_status()?;
         Ok(())
     }
 
@@ -130,8 +129,7 @@ impl MastodonClient for HttpMastodonClient {
             .header("Authorization", &self.auth)
             .send()
             .await?
-            .error_for_status()
-            .with_context(|| format!("Failed to unfavourite status {id}"))?;
+            .error_for_status()?;
         Ok(())
     }
 }
@@ -215,11 +213,16 @@ pub async fn delete_old_posts(
                     info!("Deleted {label}: {} ({})", status.id, status.created_at);
                 }
                 Err(e) => {
+                    let msg = e.to_string();
+                    if msg.contains("429") {
+                        warn!("Rate limited — Mastodon allows 30 deletions per 30 minutes. Remaining posts will be cleaned up on the next run.");
+                        break;
+                    }
                     warn!("Failed to delete {}: {e}", status.id);
                 }
             }
 
-            // Mastodon rate-limits deletions; be conservative
+            // Mastodon rate-limits deletions to 30 per 30 minutes
             tokio::time::sleep(std::time::Duration::from_millis(300)).await;
         }
     }
@@ -284,10 +287,16 @@ pub async fn delete_old_posts(
                         info!("Unfavourited: {} ({})", status.id, status.created_at);
                     }
                     Err(e) => {
+                        let msg = e.to_string();
+                        if msg.contains("429") {
+                            warn!("Rate limited — Mastodon allows 30 deletions per 30 minutes. Remaining favourites will be cleaned up on the next run.");
+                            break 'favourites;
+                        }
                         warn!("Failed to unfavourite {}: {e}", status.id);
                     }
                 }
 
+                // Mastodon rate-limits deletions to 30 per 30 minutes
                 tokio::time::sleep(std::time::Duration::from_millis(300)).await;
             }
 
