@@ -43,7 +43,8 @@ pub async fn delete_old_posts(
 
     let mut max_id: Option<String> = None;
     let mut deleted = 0u64;
-    let mut skipped = 0u64;
+    let mut skipped_pinned = 0u64;
+    let mut skipped_kept = 0u64;
 
     loop {
         let mut url = format!(
@@ -84,7 +85,7 @@ pub async fn delete_old_posts(
             }
 
             if status.pinned && !config.delete_pinned {
-                skipped += 1;
+                skipped_pinned += 1;
                 warn!(
                     "Skipping pinned post: {}. To keep it permanently, add to your keep file: mastodon:{}",
                     status.id, status.id
@@ -93,7 +94,7 @@ pub async fn delete_old_posts(
             }
 
             if is_protected(keep_list, "mastodon", &status.id) {
-                skipped += 1;
+                skipped_kept += 1;
                 info!("Protected, skipping: {}", status.id);
                 continue;
             }
@@ -125,6 +126,8 @@ pub async fn delete_old_posts(
         }
     }
 
-    info!("Mastodon: deleted {deleted}, skipped {skipped} protected");
+    info!(
+        "Mastodon: deleted {deleted}, skipped {skipped_pinned} pinned, skipped {skipped_kept} kept"
+    );
     Ok(())
 }

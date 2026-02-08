@@ -92,7 +92,8 @@ pub async fn delete_old_posts(
 
     let mut cursor: Option<String> = None;
     let mut deleted = 0u64;
-    let mut skipped = 0u64;
+    let mut skipped_pinned = 0u64;
+    let mut skipped_kept = 0u64;
 
     loop {
         let mut url = format!(
@@ -139,7 +140,7 @@ pub async fn delete_old_posts(
             let rkey = record.uri.rsplit('/').next().context("Invalid AT URI")?;
 
             if pinned_uri.as_deref() == Some(record.uri.as_str()) {
-                skipped += 1;
+                skipped_pinned += 1;
                 warn!(
                     "Skipping pinned post: {}. To keep it permanently, add to your keep file: bluesky:{}",
                     record.uri, rkey
@@ -150,7 +151,7 @@ pub async fn delete_old_posts(
             if is_protected(keep_list, "bluesky", rkey)
                 || is_protected(keep_list, "bluesky", &record.uri)
             {
-                skipped += 1;
+                skipped_kept += 1;
                 info!("Protected, skipping: {}", record.uri);
                 continue;
             }
@@ -188,6 +189,8 @@ pub async fn delete_old_posts(
         }
     }
 
-    info!("Bluesky: deleted {deleted}, skipped {skipped} protected");
+    info!(
+        "Bluesky: deleted {deleted}, skipped {skipped_pinned} pinned, skipped {skipped_kept} kept"
+    );
     Ok(())
 }
