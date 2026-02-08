@@ -21,6 +21,14 @@ inputs:
     description: 'Set to "true" to also delete pinned posts (default: skip them)'
     required: false
     default: 'false'
+  delete-reposts:
+    description: 'Set to "false" to skip deleting reposts/boosts (default: delete them)'
+    required: false
+    default: 'true'
+  delete-likes:
+    description: 'Set to "false" to skip deleting likes/favourites (default: delete them)'
+    required: false
+    default: 'true'
   bluesky-identifier:
     description: 'Bluesky handle or DID'
     required: false
@@ -145,6 +153,8 @@ runs:
         RETENTION_DAYS: ${{ inputs.retention-days }}
         DRY_RUN: ${{ inputs.dry-run }}
         DELETE_PINNED: ${{ inputs.delete-pinned }}
+        DELETE_REPOSTS: ${{ inputs.delete-reposts }}
+        DELETE_LIKES: ${{ inputs.delete-likes }}
         KEEP_FILE: ${{ steps.keep.outputs.path }}
         BLUESKY_IDENTIFIER: ${{ inputs.bluesky-identifier }}
         BLUESKY_APP_PASSWORD: ${{ inputs.bluesky-app-password }}
