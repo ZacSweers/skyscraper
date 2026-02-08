@@ -97,6 +97,7 @@ echo
 echo "You need your instance URL and an access token."
 echo "Create a token at: <your-instance>/settings/applications/new"
 echo "Required scopes: read:accounts, read:statuses, write:statuses"
+echo "Optional scopes: read:favourites, write:favourites (for deleting likes)"
 echo
 
 MASTODON_INSTANCE_URL=""
